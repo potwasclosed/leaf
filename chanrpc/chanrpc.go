@@ -25,7 +25,7 @@ type CallInfo struct {
 	f       interface{}	//可以是pb类型,也可以是字符串/id  k=v 反正v=方法
 	args    []interface{}	//参数
 	chanRet chan *RetInfo	//同步调用的时候, 返回结果到这个ret中,1.阻塞调用的话,client在等待他. 2.异步调用的话,返回指定协成的协成里处理,反正我这个消息放到这里了.
-	cb      interface{}	//这里为啥又有个cb?????????
+	cb      interface{}	//这里为啥又有个cb,为了让cb和调用者的上下文关联起来.不然要用个map[cbfun_id]cbfun  来存.
 }
 
 type RetInfo struct {	//处理每一个消息之后都产生一个  ret 结构
@@ -91,7 +91,8 @@ func (s *Server) ret(ci *CallInfo, ri *RetInfo) (err error) {
 		}
 	}()
 
-	ri.cb = ci.cb
+	ri.cb = ci.cb		//原来客户端的回调,赋值给返回的结构
+	
 	ci.chanRet <- ri	//这里把结果返回,同步调用的话,对方 阻塞 等.
 	return
 }
@@ -107,7 +108,7 @@ func (s *Server) exec(ci *CallInfo) (err error) {
 				err = fmt.Errorf("%v", r)
 			}
 
-			s.ret(ci, &RetInfo{err: fmt.Errorf("%v", r)})	//调用报错了,也会给原来的调用方一个错误结果,所以不会导致 client 方 卡住.
+			s.ret(ci, &RetInfo{err: fmt.Errorf("%v", r)})	//调用报错了,也会给原来的调用方一个错误结果,所以不会导致 client 方 卡住. 异步调用就不用管.
 		}
 	}()
 
