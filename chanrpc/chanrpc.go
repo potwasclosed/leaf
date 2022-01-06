@@ -28,24 +28,24 @@ type CallInfo struct {
 	cb      interface{}	//这里为啥又有个cb?????????
 }
 
-type RetInfo struct {
+type RetInfo struct {	//处理每一个消息之后都产生一个  ret 结构
 	// nil
 	// interface{}
 	// []interface{}
-	ret interface{}
-	err error
+	ret interface{}		//结果
+	err error		//报错
 	// callback:
 	// func(err error)
 	// func(ret interface{}, err error)
 	// func(ret []interface{}, err error)
-	cb interface{}
+	cb interface{}		//请求的时候那个回调函数?
 }
 
 type Client struct {
 	s               *Server
-	chanSyncRet     chan *RetInfo
-	ChanAsynRet     chan *RetInfo
-	pendingAsynCall int
+	chanSyncRet     chan *RetInfo	//同步call 用
+	ChanAsynRet     chan *RetInfo	//异步调用用, 这么说?一个server就一个client?
+	pendingAsynCall int		//需要等回调处理玩,防止漏回调没处理.
 }
 
 func NewServer(l int) *Server {
@@ -92,7 +92,7 @@ func (s *Server) ret(ci *CallInfo, ri *RetInfo) (err error) {
 	}()
 
 	ri.cb = ci.cb
-	ci.chanRet <- ri
+	ci.chanRet <- ri	//这里把结果返回,同步调用的话,对方 阻塞 等.
 	return
 }
 
@@ -107,7 +107,7 @@ func (s *Server) exec(ci *CallInfo) (err error) {
 				err = fmt.Errorf("%v", r)
 			}
 
-			s.ret(ci, &RetInfo{err: fmt.Errorf("%v", r)})
+			s.ret(ci, &RetInfo{err: fmt.Errorf("%v", r)})	//调用报错了,也会给原来的调用方一个错误结果,所以不会导致 client 方 卡住.
 		}
 	}()
 
@@ -135,7 +135,7 @@ func (s *Server) Exec(ci *CallInfo) {
 }
 
 // goroutine safe
-func (s *Server) Go(id interface{}, args ...interface{}) {
+func (s *Server) Go(id interface{}, args ...interface{}) {	//非阻塞调用,网关路由来的消息--->路由到指定 模块 去执行.
 	f := s.functions[id]
 	if f == nil {
 		return
@@ -145,7 +145,7 @@ func (s *Server) Go(id interface{}, args ...interface{}) {
 		recover()
 	}()
 
-	s.ChanCall <- &CallInfo{
+	s.ChanCall <- &CallInfo{	//发到对应的消息队列.
 		f:    f,
 		args: args,
 	}
@@ -202,7 +202,7 @@ func (c *Client) call(ci *CallInfo, block bool) (err error) {
 	}()
 
 	if block {
-		c.s.ChanCall <- ci
+		c.s.ChanCall <- ci	//阻塞调用?  对方报错咋办
 	} else {
 		select {
 		case c.s.ChanCall <- ci:
@@ -226,7 +226,7 @@ func (c *Client) f(id interface{}, n int) (f interface{}, err error) {
 	}
 
 	var ok bool
-	switch n {
+	switch n {	//这里干嘛? 提前检测调用的函数参数是否正确啥的
 	case 0:
 		_, ok = f.(func([]interface{}))
 	case 1:
@@ -249,7 +249,7 @@ func (c *Client) Call0(id interface{}, args ...interface{}) error {
 		return err
 	}
 
-	err = c.call(&CallInfo{
+	err = c.call(&CallInfo{	//消息投递出去
 		f:       f,
 		args:    args,
 		chanRet: c.chanSyncRet,
@@ -258,7 +258,7 @@ func (c *Client) Call0(id interface{}, args ...interface{}) error {
 		return err
 	}
 
-	ri := <-c.chanSyncRet
+	ri := <-c.chanSyncRet	//这里傻等
 	return ri.err
 }
 
@@ -310,8 +310,8 @@ func (c *Client) asynCall(id interface{}, args []interface{}, cb interface{}, n 
 	err = c.call(&CallInfo{
 		f:       f,
 		args:    args,
-		chanRet: c.ChanAsynRet,
-		cb:      cb,
+		chanRet: c.ChanAsynRet,		//异步调用,返回给哪个消息队列
+		cb:      cb,			//返回后需要闭包
 	}, false)
 	if err != nil {
 		c.ChanAsynRet <- &RetInfo{err: err, cb: cb}
@@ -324,11 +324,11 @@ func (c *Client) AsynCall(id interface{}, _args ...interface{}) {
 		panic("callback function not found")
 	}
 
-	args := _args[:len(_args)-1]
-	cb := _args[len(_args)-1]
+	args := _args[:len(_args)-1]		//最后一个参数之前的所有参数 都是 参数
+	cb := _args[len(_args)-1]		//异步调用,最后一个参数是回调函数
 
 	var n int
-	switch cb.(type) {
+	switch cb.(type) {			//检测 回调 函数类型,格式要对.
 	case func(error):
 		n = 0
 	case func(interface{}, error):
@@ -349,7 +349,7 @@ func (c *Client) AsynCall(id interface{}, _args ...interface{}) {
 	c.pendingAsynCall++
 }
 
-func execCb(ri *RetInfo) {
+func execCb(ri *RetInfo) {	//执行回调?  异步调用用的吧?
 	defer func() {
 		if r := recover(); r != nil {
 			if conf.LenStackBuf > 0 {
@@ -363,7 +363,7 @@ func execCb(ri *RetInfo) {
 	}()
 
 	// execute
-	switch ri.cb.(type) {
+	switch ri.cb.(type) {	//cb为调用的时候发出去的.
 	case func(error):
 		ri.cb.(func(error))(ri.err)
 	case func(interface{}, error):
