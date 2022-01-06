@@ -42,7 +42,7 @@ func (gate *Gate) Run(closeSig chan bool) {
 		wsServer.NewAgent = func(conn *network.WSConn) network.Agent {
 			a := &agent{conn: conn, gate: gate}
 			if gate.AgentChanRPC != nil {
-				gate.AgentChanRPC.Go("NewAgent", a)
+				gate.AgentChanRPC.Go("NewAgent", a)//给对方的chan 投递消息
 			}
 			return a
 		}
@@ -83,10 +83,10 @@ func (gate *Gate) Run(closeSig chan bool) {
 
 func (gate *Gate) OnDestroy() {}
 
-type agent struct {
-	conn     network.Conn
-	gate     *Gate
-	userData interface{}
+type agent struct {			//client session 代理
+	conn     network.Conn           //client 连接
+	gate     *Gate                  //需要转给的网关.
+	userData interface{}            //绑定的数据.
 }
 
 func (a *agent) Run() {
@@ -98,12 +98,12 @@ func (a *agent) Run() {
 		}
 
 		if a.gate.Processor != nil {
-			msg, err := a.gate.Processor.Unmarshal(data)
+			msg, err := a.gate.Processor.Unmarshal(data)      //解包 bytes-->msg
 			if err != nil {
 				log.Debug("unmarshal message error: %v", err)
 				break
 			}
-			err = a.gate.Processor.Route(msg, a)
+			err = a.gate.Processor.Route(msg, a)               // process 处理过程,就是 路由消息,到底是拦截 还是 什么的,其实这里还挺好玩的,很多人都忘了 这一层.
 			if err != nil {
 				log.Debug("route message error: %v", err)
 				break
@@ -114,7 +114,7 @@ func (a *agent) Run() {
 
 func (a *agent) OnClose() {
 	if a.gate.AgentChanRPC != nil {
-		err := a.gate.AgentChanRPC.Call0("CloseAgent", a)
+		err := a.gate.AgentChanRPC.Call0("CloseAgent", a)     //连接关闭的时候给 网关 投递一个消息.
 		if err != nil {
 			log.Error("chanrpc error: %v", err)
 		}
@@ -123,7 +123,7 @@ func (a *agent) OnClose() {
 
 func (a *agent) WriteMsg(msg interface{}) {
 	if a.gate.Processor != nil {
-		data, err := a.gate.Processor.Marshal(msg)
+		data, err := a.gate.Processor.Marshal(msg)	//msg -->变成 bytes  感觉 其实可以放到io层来做.
 		if err != nil {
 			log.Error("marshal message %v error: %v", reflect.TypeOf(msg), err)
 			return
