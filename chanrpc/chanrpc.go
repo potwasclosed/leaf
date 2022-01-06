@@ -38,7 +38,7 @@ type RetInfo struct {	//处理每一个消息之后都产生一个  ret 结构
 	// func(err error)
 	// func(ret interface{}, err error)
 	// func(ret []interface{}, err error)
-	cb interface{}		//请求的时候那个回调函数?
+	cb interface{}		//请求的时候那个回调函数,interface 只要为了适配不同的类型
 }
 
 type Client struct {
@@ -364,7 +364,7 @@ func execCb(ri *RetInfo) {	//执行回调?  异步调用用的吧?
 	}()
 
 	// execute
-	switch ri.cb.(type) {	//cb为调用的时候发出去的.
+	switch ri.cb.(type) {	//cb为调用的时候发出去的.  最后一个参数是error
 	case func(error):
 		ri.cb.(func(error))(ri.err)
 	case func(interface{}, error):
