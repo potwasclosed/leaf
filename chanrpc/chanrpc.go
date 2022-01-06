@@ -38,7 +38,7 @@ type RetInfo struct {	//处理每一个消息之后都产生一个  ret 结构
 	// func(err error)
 	// func(ret interface{}, err error)
 	// func(ret []interface{}, err error)
-	cb interface{}		//请求的时候那个回调函数,interface 只要为了适配不同的类型
+	cb interface{}		//请求的时候那个回调函数,interface 只要为了适配不同的类型  这么设计是,即使报错了,也要告诉调用方为啥报错了.
 }
 
 type Client struct {
@@ -51,7 +51,7 @@ type Client struct {
 func NewServer(l int) *Server {
 	s := new(Server)
 	s.functions = make(map[interface{}]interface{})
-	s.ChanCall = make(chan *CallInfo, l)
+	s.ChanCall = make(chan *CallInfo, l)//这里不是1 是len
 	return s
 }
 
@@ -108,7 +108,7 @@ func (s *Server) exec(ci *CallInfo) (err error) {
 				err = fmt.Errorf("%v", r)
 			}
 
-			s.ret(ci, &RetInfo{err: fmt.Errorf("%v", r)})	//调用报错了,也会给原来的调用方一个错误结果,所以不会导致 client 方 卡住. 异步调用就不用管.
+			s.ret(ci, &RetInfo{err: fmt.Errorf("%v", r)})	//!!!!!调用报错了,也会给原来的调用方一个错误结果,所以不会导致 client 方 卡住. 异步调用就不用管.
 		}
 	}()
 
