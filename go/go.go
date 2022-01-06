@@ -33,11 +33,11 @@ func New(l int) *Go {
 }
 
 func (g *Go) Go(f func(), cb func()) {
-	g.pendingGo++
+	g.pendingGo++ //这里go 为啥不会出问题?  ++实在go 外面的,所以这里其实不会被并发的.
 
 	go func() {
 		defer func() {
-			g.ChanCb <- cb
+			g.ChanCb <- cb    //go 处理的到的结果,最后在哪里执行了????   只要把结果消息,投递到 想到执行的那个协程  处理的消息队列里 就行. 这个很有意思啊.
 			if r := recover(); r != nil {
 				if conf.LenStackBuf > 0 {
 					buf := make([]byte, conf.LenStackBuf)
@@ -73,7 +73,7 @@ func (g *Go) Cb(cb func()) {
 }
 
 func (g *Go) Close() {
-	for g.pendingGo > 0 {
+	for g.pendingGo > 0 {  //其实这里也是很巧妙的.
 		g.Cb(<-g.ChanCb)
 	}
 }
