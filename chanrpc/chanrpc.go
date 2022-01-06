@@ -81,7 +81,7 @@ func (s *Server) Register(id interface{}, f interface{}) {
 }
 
 func (s *Server) ret(ci *CallInfo, ri *RetInfo) (err error) {
-	if ci.chanRet == nil {
+	if ci.chanRet == nil {//处理,三种调用方式,  chanRet=nil 不需要给对方返回.
 		return
 	}
 
