@@ -17,15 +17,15 @@ type Server struct {
 	// func(args []interface{})
 	// func(args []interface{}) interface{}
 	// func(args []interface{}) []interface{}
-	functions map[interface{}]interface{}
-	ChanCall  chan *CallInfo
+	functions map[interface{}]interface{}	//提供的方法
+	ChanCall  chan *CallInfo //消息队列
 }
 
 type CallInfo struct {
-	f       interface{}
-	args    []interface{}
-	chanRet chan *RetInfo
-	cb      interface{}
+	f       interface{}	//可以是pb类型,也可以是字符串/id  k=v 反正v=方法
+	args    []interface{}	//参数
+	chanRet chan *RetInfo	//同步调用的时候, 返回结果到这个ret中,1.阻塞调用的话,client在等待他. 2.异步调用的话,返回指定协成的协成里处理,反正我这个消息放到这里了.
+	cb      interface{}	//这里为啥又有个cb?????????
 }
 
 type RetInfo struct {
