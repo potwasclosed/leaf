@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	server  *network.TCPServer
-	clients []*network.TCPClient
+	server  *network.TCPServer    //本服务
+	clients []*network.TCPClient   //连接别的服务用的?
 )
 
 func Init() {
@@ -29,13 +29,13 @@ func Init() {
 		client := new(network.TCPClient)
 		client.Addr = addr
 		client.ConnNum = 1
-		client.ConnectInterval = 3 * time.Second
+		client.ConnectInterval = 3 * time.Second //感觉好像支持 断线  重新连接/
 		client.PendingWriteNum = conf.PendingWriteNum
 		client.LenMsgLen = 4
 		client.MaxMsgLen = math.MaxUint32
 		client.NewAgent = newAgent
 
-		client.Start()
+		client.Start()  //这里不知道是不是阻塞的.
 		clients = append(clients, client)
 	}
 }
@@ -50,7 +50,7 @@ func Destroy() {
 	}
 }
 
-type Agent struct {
+type Agent struct {	//这个代理?连接中心服务器?
 	conn *network.TCPConn
 }
 
