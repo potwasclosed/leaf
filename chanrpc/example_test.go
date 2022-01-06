@@ -13,8 +13,8 @@ func Example() {
 	wg.Add(1)
 
 	// goroutine 1
-	go func() {
-		s.Register("f0", func(args []interface{}) {
+	go func() {		//单独开了  一个   协程,  模拟一个 服务
+		s.Register("f0", func(args []interface{}) {	// 用这个注册 更多的是 为了 检测 传递的参数吧
 
 		})
 
@@ -32,10 +32,10 @@ func Example() {
 			return n1 + n2
 		})
 
-		wg.Done()
+		wg.Done()   //这里为啥 应为必须 上面注册好了,才能启动下面的 携程.防止 g2 比 g1 更先执行. 经典啊  经典
 
 		for {
-			s.Exec(<-s.ChanCall)
+			s.Exec(<-s.ChanCall) 	//不停的从chan里面拿消息,  死循环.
 		}
 	}()
 
@@ -44,7 +44,7 @@ func Example() {
 
 	// goroutine 2
 	go func() {
-		c := s.Open(10)
+		c := s.Open(10)//打开一个client
 
 		// sync
 		err := c.Call0("f0")
@@ -104,7 +104,7 @@ func Example() {
 			}
 		})
 
-		c.Cb(<-c.ChanAsynRet)
+		c.Cb(<-c.ChanAsynRet) //因为 异步  所以这么写,等待返回结束.  作者还是很巧妙的啊.
 		c.Cb(<-c.ChanAsynRet)
 		c.Cb(<-c.ChanAsynRet)
 		c.Cb(<-c.ChanAsynRet)
