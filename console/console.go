@@ -43,13 +43,13 @@ func newAgent(conn *network.TCPConn) network.Agent {
 	return a
 }
 
-func (a *Agent) Run() {
+func (a *Agent) Run() { //解析字符串
 	for {
 		if conf.ConsolePrompt != "" {
 			a.conn.Write([]byte(conf.ConsolePrompt))
 		}
 
-		line, err := a.reader.ReadString('\n')
+		line, err := a.reader.ReadString('\n') //解析到最后
 		if err != nil {
 			break
 		}
