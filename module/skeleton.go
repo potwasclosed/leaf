@@ -8,11 +8,11 @@ import (
 	"time"
 )
 
-type Skeleton struct {
+type Skeleton struct {			//管理 当前模块,一系列集合
 	GoLen              int
 	TimerDispatcherLen int
 	AsynCallLen        int
-	ChanRPCServer      *chanrpc.Server
+	ChanRPCServer      *chanrpc.Server	//对外暴露的.
 	g                  *g.Go
 	dispatcher         *timer.Dispatcher
 	client             *chanrpc.Client
@@ -42,7 +42,7 @@ func (s *Skeleton) Init() {
 	s.commandServer = chanrpc.NewServer(0)
 }
 
-func (s *Skeleton) Run(closeSig chan bool) {
+func (s *Skeleton) Run(closeSig chan bool) {	//统一 这个线程来 执行,控制并发
 	for {
 		select {
 		case <-closeSig:
@@ -99,7 +99,7 @@ func (s *Skeleton) NewLinearContext() *g.LinearContext {
 	return s.g.NewLinearContext()
 }
 
-func (s *Skeleton) AsynCall(server *chanrpc.Server, id interface{}, args ...interface{}) {
+func (s *Skeleton) AsynCall(server *chanrpc.Server, id interface{}, args ...interface{}) {	//对外封装的接口
 	if s.AsynCallLen == 0 {
 		panic("invalid AsynCallLen")
 	}
