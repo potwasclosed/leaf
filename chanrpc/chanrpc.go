@@ -93,7 +93,7 @@ func (s *Server) ret(ci *CallInfo, ri *RetInfo) (err error) {
 
 	ri.cb = ci.cb		//原来客户端的回调,赋值给返回的结构
 	
-	ci.chanRet <- ri	//这里把结果返回,同步调用的话,对方 阻塞 等.
+	ci.chanRet <- ri	//这里把结果返回,同步调用的话,对方 阻塞 等.   这个封装结构的原因是, 对方可能是多种参数的回调函数
 	return
 }
 
