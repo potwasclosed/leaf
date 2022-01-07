@@ -19,7 +19,7 @@ type module struct {
 	wg       sync.WaitGroup
 }
 
-var mods []*module
+var mods []*module				//感觉是用来控制各个模块/线程, 启动和销毁流程
 
 func Register(mi Module) {
 	m := new(module)
